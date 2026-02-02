@@ -1,0 +1,1 @@
+"""Web interface for the intelligent log analysis system."""

@@ -1,0 +1,196 @@
+# Default configuration for Intelligent Log Analysis System
+
+# System-wide settings
+system:
+  log_level: "INFO"
+  log_file: "logs/intelligent_log_analysis.log"
+  metrics_retention_hours: 24
+  
+# Log collection settings
+collector:
+  # Standard log locations to monitor
+  log_sources:
+    - path: "/var/log"
+      recursive: true
+      patterns: ["*.log", "syslog*"]
+    - path: "/var/log/auth.log"
+      format: "syslog"
+    - path: "C:\\Windows\\System32\\winevt\\Logs"  # Windows Event Logs
+      format: "windows_event"
+      
+  # Processing settings
+  batch_size: 1000
+  processing_interval_seconds: 1
+  max_file_size_mb: 100
+  
+  # Retry settings
+  retry_attempts: 3
+  retry_backoff_base: 2
+  retry_max_delay: 300
+
+# Log parsing settings  
+parser:
+  # Drain algorithm parameters
+  drain:
+    depth: 4
+    similarity_threshold: 0.4
+    max_children: 100
+    
+  # Template extraction
+  template_cache_size: 10000
+  parameter_extraction: true
+
+# Pattern detection settings
+pattern_detector:
+  # Analysis windows
+  short_window_minutes: 5
+  long_window_hours: 24
+  
+  # Pattern classification
+  frequency_threshold: 10
+  confidence_threshold: 0.8
+  
+  # Baseline establishment
+  baseline_days: 7
+  baseline_update_hours: 6
+
+# Machine learning settings
+ml_engine:
+  # Model training
+  training_data_days: 30
+  retrain_interval_hours: 24
+  min_training_samples: 1000
+  
+  # Prediction settings
+  prediction_horizon_hours: 24
+  confidence_threshold: 0.8
+  
+  # Model parameters
+  ensemble_models:
+    - "random_forest"
+    - "isolation_forest" 
+    - "lstm"
+  
+  feature_extraction:
+    window_size_minutes: 60
+    max_features: 1000
+
+# Anomaly detection settings
+anomaly_detector:
+  # Detection methods
+  statistical_threshold: 3.0  # Standard deviations
+  isolation_forest_contamination: 0.1
+  
+  # Severity scoring
+  severity_thresholds:
+    low: 0.3
+    medium: 0.6
+    high: 0.8
+    critical: 0.9
+    
+  # Learning settings
+  feedback_weight: 0.1
+  baseline_update_rate: 0.05
+
+# Alert system settings
+alert_system:
+  # Triggering thresholds
+  prediction_confidence_threshold: 0.8
+  anomaly_severity_threshold: 0.6
+  critical_alert_timeout_seconds: 30
+  
+  # Rate limiting
+  max_alerts_per_minute: 10
+  burst_window_minutes: 5
+  
+  # Notification channels
+  email:
+    enabled: false
+    smtp_server: "localhost"
+    smtp_port: 587
+    from_address: "alerts@intelligent-log-analysis.local"
+    
+  webhook:
+    enabled: false
+    url: ""
+    timeout_seconds: 10
+    
+  # Alert content
+  include_context: true
+  include_recommendations: true
+  max_context_lines: 20
+
+# Database settings
+database:
+  # Time series database (InfluxDB)
+  influxdb:
+    url: "http://localhost:8086"
+    token: ""
+    org: "intelligent-log-analysis"
+    bucket: "logs"
+    
+  # Relational database (PostgreSQL)
+  postgresql:
+    host: "localhost"
+    port: 5432
+    database: "intelligent_log_analysis"
+    username: "postgres"
+    password: ""
+    
+  # Relational database (MySQL) - Alternative to PostgreSQL
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "intelligent_log_analysis"
+    username: "root"
+    password: ""
+    
+  # Connection settings
+  connection_pool_size: 10
+  connection_timeout_seconds: 30
+  query_timeout_seconds: 60
+  
+  # Data retention
+  retention_policies:
+    raw_logs_days: 30
+    patterns_days: 90
+    predictions_days: 365
+    metrics_days: 30
+
+# Performance settings
+performance:
+  # Processing limits
+  max_log_entries_per_second: 10000
+  max_concurrent_files: 50
+  max_memory_usage_mb: 2048
+  
+  # Auto-scaling
+  enable_auto_scaling: true
+  scale_up_threshold: 0.8
+  scale_down_threshold: 0.3
+  
+  # Resource prioritization
+  critical_sources_priority: 10
+  high_severity_priority: 8
+  normal_priority: 5
+
+# API settings
+api:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  
+  # Authentication (if enabled)
+  enable_auth: false
+  jwt_secret: "change-this-secret"
+  token_expiry_hours: 24
+
+# Dashboard settings  
+dashboard:
+  refresh_interval_seconds: 30
+  max_recent_events: 1000
+  chart_data_points: 100
+  
+  # Display settings
+  timezone: "UTC"
+  date_format: "%Y-%m-%d %H:%M:%S"
