@@ -15,6 +15,7 @@ This is the main entry point for the project.
 """
 
 import sys
+import os
 import uvicorn
 from pathlib import Path
 
@@ -24,6 +25,10 @@ sys.path.insert(0, str(project_root))
 
 def main():
     """Run the intelligent log analysis web application."""
+    # Get port from environment variable (for cloud deployment) or use default
+    port = int(os.environ.get("PORT", 8000))
+    host = os.environ.get("HOST", "0.0.0.0")
+    
     print("=" * 60)
     print("🧠 INTELLIGENT OS LOG ANALYSIS SYSTEM")
     print("=" * 60)
@@ -39,7 +44,7 @@ def main():
     print("   • analyst / analyst123 (Log Analyst)")
     print("   • demo / demo (Viewer)")
     print()
-    print("🌐 Access the application at: http://localhost:8000")
+    print(f"🌐 Access the application at: http://{host}:{port}")
     print("📝 Create new accounts via the registration page")
     print("=" * 60)
     print()
@@ -47,21 +52,20 @@ def main():
     try:
         from intelligent_log_analysis.web.app import app
         
-        # Run the FastAPI application on the standard port
+        # Run the FastAPI application
         uvicorn.run(
             app, 
-            host="0.0.0.0", 
-            port=8000,
+            host=host, 
+            port=port,
             log_level="info"
         )
     except OSError as e:
         if "address already in use" in str(e).lower() or "10048" in str(e):
-            print("❌ Port 8000 is already in use!")
+            print(f"❌ Port {port} is already in use!")
             print()
             print("💡 Solutions:")
-            print("1. Stop the other application using port 8000")
-            print("2. Or run on a different port:")
-            print("   python -m intelligent_log_analysis.main --port 8001")
+            print("1. Stop the other application using the port")
+            print(f"2. Or run on a different port: python -m intelligent_log_analysis.main --port {port + 1}")
             print()
             sys.exit(1)
         else:
