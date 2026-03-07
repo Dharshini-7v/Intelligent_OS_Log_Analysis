@@ -39,7 +39,7 @@ def main():
     print("   • analyst / analyst123 (Log Analyst)")
     print("   • demo / demo (Viewer)")
     print()
-    print("🌐 Access the application at: http://localhost:8000")
+    print("🌐 Access the application at: http://localhost:8500")
     print("📝 Create new accounts via the registration page")
     print("=" * 60)
     print()
@@ -51,17 +51,17 @@ def main():
         uvicorn.run(
             app, 
             host="0.0.0.0", 
-            port=8000,
+            port=8500,
             log_level="info"
         )
     except OSError as e:
         if "address already in use" in str(e).lower() or "10048" in str(e):
-            print("❌ Port 8000 is already in use!")
+            print("❌ Port 8500 is already in use!")
             print()
             print("💡 Solutions:")
-            print("1. Stop the other application using port 8000")
+            print("1. Stop the other application using port 8500")
             print("2. Or run on a different port:")
-            print("   python -m intelligent_log_analysis.main --port 8001")
+            print("   python -m intelligent_log_analysis.main --port 8501")
             print()
             sys.exit(1)
         else:

@@ -10,13 +10,13 @@ system:
 collector:
   # Standard log locations to monitor
   log_sources:
-    - path: "/var/log"
+    - path: "logs"
       recursive: true
-      patterns: ["*.log", "syslog*"]
-    - path: "/var/log/auth.log"
-      format: "syslog"
+      patterns: ["*.log"]
+      enabled: true
     - path: "C:\\Windows\\System32\\winevt\\Logs"  # Windows Event Logs
       format: "windows_event"
+      enabled: false # Watchdog can't monitor these directly easily
       
   # Processing settings
   batch_size: 1000
@@ -142,8 +142,8 @@ database:
     host: "localhost"
     port: 3306
     database: "intelligent_log_analysis"
-    username: "root"
-    password: ""
+    username: "log_analyzer"
+    password: "LogAnalyzer@2026"
     
   # Connection settings
   connection_pool_size: 10
@@ -177,7 +177,7 @@ performance:
 # API settings
 api:
   host: "0.0.0.0"
-  port: 8000
+  port: 8500
   workers: 4
   
   # Authentication (if enabled)

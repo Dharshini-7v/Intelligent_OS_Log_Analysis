@@ -4,6 +4,7 @@ import asyncio
 import json
 import re
 import hashlib
+from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Form, HTTPException, Depends
@@ -14,15 +15,24 @@ from fastapi.security import HTTPBearer
 from pydantic import BaseModel, EmailStr, validator
 import jwt
 
-from ..models.log_models import ParsedLog, LogLevel
+from ..models.log_models import ParsedLog, LogLevel, LogSource
 from ..models.anomaly_models import Anomaly, SeverityLevel
 from ..models.pattern_models import Pattern
 from ..models.prediction_models import Prediction
+from ..models.config_models import CollectorConfig, ParserConfig
+from ..core.collector import LogCollector
+from ..core.parser import LogParser
 from ..utils.logging import get_logger
 from ..utils.config import ConfigManager
-from ..storage.database import get_database, initialize_database
+from ..storage.database import get_database, initialize_database, close_database
 
 logger = get_logger("web")
+
+# Global instances
+config_manager: Optional[ConfigManager] = None
+db_manager: Optional[Any] = None
+log_parser: Optional[LogParser] = None
+log_collector: Optional[LogCollector] = None
 
 # Security configuration
 SECRET_KEY = "intelligent_log_analysis_secret_key_2024"
@@ -102,6 +112,115 @@ async def save_user_to_database(username: str, password_hash: str, email: str, n
         logger.error(f"Failed to save user to database: {e}")
 
 app = FastAPI(title="Intelligent Log Analysis Dashboard", version="1.0.0")
+
+# Lifecycle events
+@app.on_event("startup")
+async def startup_event():
+    """Initialize system components on startup."""
+    global config_manager, db_manager, log_parser, log_collector
+    
+    logger.info("Initializing Intelligent Log Analysis System...")
+    
+    try:
+        # Load configuration
+        config_path = Path("config/default.yaml")
+        config_manager = ConfigManager(config_path)
+        config = config_manager.get_all_config()
+        
+        # Initialize database
+        db_manager = await initialize_database(config)
+        logger.info("Database initialized")
+        
+        # Initialize log parser
+        parser_config = ParserConfig(
+            drain_depth=config.get("parser", {}).get("drain", {}).get("depth", 4),
+            drain_similarity_threshold=config.get("parser", {}).get("drain", {}).get("similarity_threshold", 0.4),
+            drain_max_children=config.get("parser", {}).get("drain", {}).get("max_children", 100),
+            template_cache_size=config.get("parser", {}).get("template_cache_size", 10000),
+            parameter_extraction=config.get("parser", {}).get("parameter_extraction", True)
+        )
+        log_parser = LogParser(parser_config)
+        logger.info("Log parser initialized")
+        
+        # Initialize log collector
+        collector_config = CollectorConfig(
+            log_sources=config.get("collector", {}).get("log_sources", []),
+            batch_size=config.get("collector", {}).get("batch_size", 1000),
+            processing_interval_seconds=config.get("collector", {}).get("processing_interval_seconds", 1.0)
+        )
+        log_collector = LogCollector(collector_config)
+        
+        # Set callback for real-time processing
+        log_collector.set_log_callback(log_processing_callback)
+        
+        # Start collector
+        await log_collector.start()
+        logger.info("Log collector started")
+        
+        # Start demo data generation as fallback/enrichment
+        asyncio.create_task(run_demo_generation())
+        
+    except Exception as e:
+        logger.error(f"Error during startup: {e}")
+        # In demo mode, we continue even if some components fail
+        asyncio.create_task(run_demo_generation())
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup components on shutdown."""
+    logger.info("Shutting down system components...")
+    
+    if log_collector:
+        await log_collector.stop()
+    
+    await close_database()
+
+def log_processing_callback(log_line: str, file_path: str, source_config: LogSource):
+    """Callback for processing new log entries in real-time."""
+    if not log_parser or not db_manager:
+        return
+        
+    try:
+        # Parse the log entry
+        parsed_log = log_parser.parse_log_entry(log_line, file_path, source_config.format)
+        
+        # Store in database
+        asyncio.create_task(db_manager.store_log_entry(parsed_log))
+        
+        # Broadcast to dashboard via WebSockets
+        log_data = parsed_log.to_dict()
+        asyncio.create_task(broadcast_update({
+            "type": "new_log",
+            "data": log_data
+        }))
+        
+        # Also update demo data for fallback queries
+        demo_data["logs"].append(log_data)
+        demo_data["metrics"]["logs_processed"] += 1
+        if len(demo_data["logs"]) > 1000:
+            demo_data["logs"] = demo_data["logs"][-1000:]
+            
+    except Exception as e:
+        logger.error(f"Error in log processing callback: {e}")
+
+async def run_demo_generation():
+    """Task for periodic demo data generation."""
+    while True:
+        try:
+            # Generate demo log every few seconds
+            await generate_demo_log()
+            
+            # Occasionally generate an anomaly or prediction
+            import random
+            if random.random() < 0.05:
+                await generate_demo_anomaly()
+            if random.random() < 0.03:
+                await generate_demo_prediction()
+                
+            await asyncio.sleep(random.uniform(2, 10))
+        except Exception as e:
+            logger.error(f"Error in demo generation: {e}")
+            await asyncio.sleep(10)
 
 # Mount static files and templates
 app.mount("/static", StaticFiles(directory="intelligent_log_analysis/web/static"), name="static")
