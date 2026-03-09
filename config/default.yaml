@@ -16,11 +16,11 @@ collector:
       enabled: true
     - path: "C:\\Windows\\System32\\winevt\\Logs"  # Windows Event Logs
       format: "windows_event"
-      enabled: false # Watchdog can't monitor these directly easily
+      enabled: false 
       
   # Processing settings
-  batch_size: 1000
-  processing_interval_seconds: 1
+  batch_size: 100
+  processing_interval_seconds: 1.0
   max_file_size_mb: 100
   
   # Retry settings
@@ -122,40 +122,13 @@ alert_system:
 
 # Database settings
 database:
-  # Time series database (InfluxDB)
-  influxdb:
-    url: "http://localhost:8086"
-    token: ""
-    org: "intelligent-log-analysis"
-    bucket: "logs"
-    
-  # Relational database (PostgreSQL)
-  postgresql:
-    host: "localhost"
-    port: 5432
-    database: "intelligent_log_analysis"
-    username: "postgres"
-    password: ""
-    
-  # Relational database (MySQL) - Alternative to PostgreSQL
   mysql:
     host: "localhost"
     port: 3306
-    database: "intelligent_log_analysis"
     username: "log_analyzer"
     password: "LogAnalyzer@2026"
-    
-  # Connection settings
-  connection_pool_size: 10
-  connection_timeout_seconds: 30
-  query_timeout_seconds: 60
-  
-  # Data retention
-  retention_policies:
-    raw_logs_days: 30
-    patterns_days: 90
-    predictions_days: 365
-    metrics_days: 30
+    database: "intelligent_log_analysis"
+    connection_pool_size: 10
 
 # Performance settings
 performance:
