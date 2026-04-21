@@ -34,7 +34,7 @@ python -m intelligent_log_analysis.main --config config/custom.yaml --log-level 
 ```
 
 #### Port Management
-If port 8000 is busy:
+If port 8080 is busy:
 ```bash
 # Check what's using port 8000
 python check_port.py --check
